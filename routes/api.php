@@ -21,7 +21,9 @@ Route::get('/events', function (Request $request) {
     $current = new DateTime("2016-10-26T17:35:00-05:00");
     $nextweek = new DateTime("2016-10-26T17:35:00-05:00");
     $nextweek->add(new DateInterval('P7D'));
-    $optParams = array('singleEvents' => 'true', 'timeMin' => $current->format(DATE_RFC3339), 'timeMax' => $nextweek->format(DATE_RFC3339));
+    $optParams = array('singleEvents' => 'true',
+                       'timeMin' => $current->format(DATE_RFC3339),
+                       'timeMax' => $nextweek->format(DATE_RFC3339));
     $events = $service->events->listEvents('kc72g1ctfg8b88df34qqb62d1s@group.calendar.google.com', $optParams);
 
     $response = [];
@@ -46,7 +48,10 @@ Route::get('/events', function (Request $request) {
 
         $pageToken = $events->getNextPageToken();
         if ($pageToken) {
-            $optParams = array('singleEvents' => 'true', 'pageToken' => $pageToken, 'timeMin' => $current->format(DATE_RFC3339));
+            $optParams = array('singleEvents' => 'true',
+                               'pageToken' => $pageToken,
+                               'timeMin' => $current->format(DATE_RFC3339),
+                               'timeMax' => $nextweek->format(DATE_RFC3339));
             $events = $service->events->listEvents('kc72g1ctfg8b88df34qqb62d1s@group.calendar.google.com', $optParams);
         } else {
             break;
