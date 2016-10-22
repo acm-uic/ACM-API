@@ -61,3 +61,6 @@ Route::get('/events', function (Request $request) {
     return json_encode($response);
 });
 
+Route::get('/user', function (Request $request) {
+    return $request->user();
+})->middleware('auth:api');
