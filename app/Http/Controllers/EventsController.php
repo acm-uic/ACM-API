@@ -12,6 +12,7 @@ use DateInterval;
 use DateTime;
 use Google_Service_Calendar;
 use Google_Client;
+use Illuminate\Http\Request;
 
 class EventsController extends Controller
 {
@@ -61,5 +62,16 @@ class EventsController extends Controller
         }
 
         return json_encode($response);
+    }
+
+    public function signinEvent(Request $request) {
+        $data = [];
+        $data["UIN"] = $request->input("uin");
+        $data["Event"] = $request->input("event");
+        //get user data from database based off of UIN
+        //verify if the event is currently going on
+        //update user points
+        //return status code + user info
+        return json_encode($data);
     }
 }
