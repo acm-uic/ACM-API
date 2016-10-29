@@ -57,7 +57,7 @@ class EventController extends Controller
             return json_encode($response);
         }
         //update user points
-        if(TransactionController::UserSignedIn($user->uin, $event)) {
+        if(TransactionController::userSignedIn($user->uin, $event)) {
             //user already signed in
             return json_encode($response);
         }
