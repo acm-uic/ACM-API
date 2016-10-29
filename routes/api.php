@@ -20,4 +20,6 @@ Route::group(['prefix' => 'events'], function(){
 
 Route::group(['prefix' => 'user'], function() {
     Route::get('{uin}', 'UserController@retrieveUser');
+
+    Route::post('/create', 'UserController@createUser');
 });
