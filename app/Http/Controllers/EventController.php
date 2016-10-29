@@ -36,16 +36,22 @@ class EventController extends Controller
         $eventName = $request->input("event");
 
         //get user data from database based off of UIN
-        $user = UserController::findOrCreateUser($userUIN);
+        try {
+            $user = UserController::findOrCreateUser((int)$userUIN);
+        }
+        catch(ErrorException $e) {
+            return response(["error" => "Internal Server Error"], 500);
+        }
+
         if(!$user) {
-            //user was not found in UIC ad
-            return json_encode($response);
+            $response["error"] = "user not found";
+            return response($response, 404);
         } else if(!$user->username) {
-            //user was not found in ACM ad
-            return json_encode($response);
+            $response["error"] = "unable to find ACM account with only UIN";
+            return response($response, 300);
         } else if(!$user->active) {
-            //user is not an active ACM member
-            return json_encode($response);
+            $response["error"] = "user is an inactive ACM member";
+            return response($response, 403);
         }
         //verify if the event is currently going on
         $ongoingEvents = EventController::findOngoingEvents();
@@ -53,13 +59,13 @@ class EventController extends Controller
             return $event->name === $eventName;
         });
         if(!$event) {
-            //event is not ongoing
-            return json_encode($response);
+            $response["error"] = "event is not ongoing";
+            return response($response, 403);
         }
         //update user points
         if(TransactionController::userSignedIn($user->uin, $event)) {
-            //user already signed in
-            return json_encode($response);
+            $response["error"] = "user already signed into this event";
+            return response($response, 403);
         }
         TransactionController::createTransaction($user->uin,$event->id);
         //return status code + user info
