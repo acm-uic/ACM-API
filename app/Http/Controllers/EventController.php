@@ -44,7 +44,7 @@ class EventController extends Controller
         }
 
         if(!$user) {
-            $response["error"] = "user not found";
+            $response["error"] = "UIN not found";
             return response($response, 404);
         } else if(!$user->username) {
             $response["error"] = "unable to find ACM account with only UIN";
