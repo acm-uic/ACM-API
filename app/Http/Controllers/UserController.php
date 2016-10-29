@@ -108,8 +108,10 @@ class UserController extends Controller
             if ($ldapUICBind) {
                 $result = ldap_search($ldapUICConn, $ldapUICBase, "(employeeid=$uin)");
                 $data = ldap_get_entries($ldapUICConn, $result);
-                $user = new User;
-                $user->updateFromUICData($data);
+                if($data["count"]) {
+                    $user = new User;
+                    $user->updateFromUICData($data);
+                }
             } else {
                 throw new ErrorException("Unable to connect to UIC ad");
             }
