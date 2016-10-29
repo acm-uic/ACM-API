@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use DB;
+use ErrorException;
 use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\User;
@@ -11,18 +12,30 @@ class UserController extends Controller
 {
     public function retrieveUser(Request $request, $uin) {
         $response = [];
-        $user = UserController::findOrCreateUser((int)$uin);
-        if($user) {
-            //maybe check if user is active? or just return that information with response
-            $response["firstName"] = $user->first;
-            $response["lastName"] = $user->last;
-            $response["netid"] = $user->netid;
-            $points = TransactionController::getPointsTotal($user->uin);
-            $response["points"] = $points;
-        } else {
-            //throw error for user not found
+
+        try {
+            $user = UserController::findOrCreateUser((int)$uin);
         }
-        return json_encode($response);
+        catch(ErrorException $e) {
+            return response(["error" => "Internal Server Error"], 500);
+        }
+
+        if($user) {
+            if($user->username) {
+                $response["firstName"] = $user->first;
+                $response["lastName"] = $user->last;
+                $response["netid"] = $user->netid;
+                $points = TransactionController::getPointsTotal($user->uin);
+                $response["points"] = $points;
+                return response($response, 200);
+            } else {
+                $response["error"] = "unable to find ACM account with only UIN";
+                return response($response, 300);
+            }
+        } else {
+            $response["error"] = "user not found";
+            return response($response, 404);
+        }
     }
 
     public static function findOrCreateUser($uin)
@@ -40,14 +53,13 @@ class UserController extends Controller
             $ldapACMPass = getenv('LDAP_ACM_PASSWORD');
             $ldapACMServer = getenv('LDAP_ACM_HOST');
             $ldapACMBase = getenv('LDAP_ACM_GROUP');
-
-            $ldapUICConn = ldap_connect($ldapUICServer) or die("Could not connect to UIC LDAP server.");
-            $ldapACMConn = ldap_connect($ldapACMServer) or die("Could not connect to ACM LDAP server.");
+            $ldapUICConn = @ldap_connect($ldapUICServer);
+            $ldapACMConn = @ldap_connect($ldapACMServer);
             if ($ldapUICConn && $ldapACMConn) {
-                $ldapUICBind = ldap_bind($ldapUICConn, $ldapUICUser, $ldapUICPass) or die ("Error trying to bind UIC: " . ldap_error($ldapUICConn));
-                $ldapACMBind = ldap_bind($ldapACMConn, $ldapACMUser, $ldapACMPass) or die("Error trying to bind ACM: ". ldap_error($ldapACMConn));
+                $ldapUICBind = @ldap_bind($ldapUICConn, $ldapUICUser, $ldapUICPass);
+                $ldapACMBind = @ldap_bind($ldapACMConn, $ldapACMUser, $ldapACMPass);
                 if ($ldapUICBind) {
-                    $result = ldap_search($ldapUICConn, $ldapUICBase, "(employeeid=$uin)") or die ("Error in search query: " . ldap_error($ldapUICConn));
+                    $result = ldap_search($ldapUICConn, $ldapUICBase, "(employeeid=$uin)");
                     $data = ldap_get_entries($ldapUICConn, $result);
 
                     for ($i = 0; $i < $data["count"]; $i++) {
@@ -63,11 +75,11 @@ class UserController extends Controller
                         $user->last = $userLastName;
                     }
                 } else {
-                    echo "LDAP bind failed...";
+                    throw new ErrorException("Unable to connect to UIC ad");
                 }
 
                 if($ldapACMBind && $user) {
-                    $result = ldap_search($ldapACMConn, $ldapACMBase, "(cn=$user->first $user->last)") or die ("Error in search query: " . ldap_error($ldapACMConn));
+                    $result = ldap_search($ldapACMConn, $ldapACMBase, "(cn=$user->first $user->last)");
                     $data = ldap_get_entries($ldapACMConn, $result);
 
                     for($i = 0; $i < $data["count"]; $i++) {
@@ -90,7 +102,9 @@ class UserController extends Controller
                         $user->save();
                     }
                 } else {
-                    //acm bind failed or user was not found probably should check for which?
+                    if(!$ldapACMBind) {
+                        throw new ErrorException("Unable to connect to ACM ad");
+                    }
                 }
             }
 
