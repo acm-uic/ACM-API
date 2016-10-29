@@ -31,7 +31,6 @@ class EventController extends Controller
     }
 
     public function signinEvent(Request $request) {
-        $response = [];
         $userUIN = $request->input("uin");
         $eventName = $request->input("event");
 
@@ -43,15 +42,9 @@ class EventController extends Controller
             return response(["error" => "Internal Server Error"], 500);
         }
 
-        if(!$user) {
-            $response["error"] = "UIN not found";
-            return response($response, 404);
-        } else if(!$user->username) {
-            $response["error"] = "unable to find ACM account with only UIN";
-            return response($response, 300);
-        } else if(!$user->active) {
-            $response["error"] = "user is an inactive ACM member";
-            return response($response, 403);
+        $errorResponse = UserController::verifyActiveUser($user);
+        if($errorResponse) {
+            return $errorResponse;
         }
         //verify if the event is currently going on
         $ongoingEvents = EventController::findOngoingEvents();
@@ -70,13 +63,13 @@ class EventController extends Controller
         TransactionController::createTransaction($user->uin,$event->id);
         //return status code + user info
         $points = TransactionController::getPointsTotal($user->uin);
-
-        $response["firstName"] = $user->first;
-        $response["lastName"] = $user->last;
-        $response["netid"] = $user->netid;
-        $response["points"] = $points;
-
-        return json_encode($response);
+        $response = [
+            "firstName" => $user->first,
+            "lastName"  => $user->last,
+            "netid"     => $user->netid,
+            "points"    => $points
+        ];
+        return response($response, 200);
     }
 
     public static function findOngoingEvents() {
