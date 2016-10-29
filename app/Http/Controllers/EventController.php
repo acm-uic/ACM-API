@@ -26,8 +26,7 @@ class EventController extends Controller
             $eventResponse['event'] = $event->name;
             array_push($response['events'], $eventResponse);
         }
-
-        return json_encode($response);
+        return response($response, 200);
     }
 
     public function signinEvent(Request $request) {
