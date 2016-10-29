@@ -10,6 +10,34 @@ use App\User;
 
 class UserController extends Controller
 {
+    public function createUser(Request $request) {
+        $response = [];
+        $userUIN = $request->input("uin");
+        $userUserName = $request->input("username");
+        $userEmail = $request->input("email");
+
+        try {
+            $user = UserController::findOrCreateUser((int)$userUIN, $userUserName, $userEmail);
+        }
+        catch(ErrorException $e) {
+            return response(["error" => $e->getTraceAsString()], 500);
+        }
+        if(!$user) {
+            $response["error"] = "UIN not found";
+            return response($response, 404);
+        } else if(!$user->username) {
+            $response["error"] = "unable to find ACM account with information given";
+            return response($response, 300);
+        }
+
+        $response["firstName"] = $user->first;
+        $response["lastName"] = $user->last;
+        $response["netid"] = $user->netid;
+        $points = TransactionController::getPointsTotal($user->uin);
+        $response["points"] = $points;
+        return response($response, 200);
+    }
+
     public function retrieveUser(Request $request, $uin) {
         $response = [];
 
@@ -33,12 +61,12 @@ class UserController extends Controller
                 return response($response, 300);
             }
         } else {
-            $response["error"] = "user not found";
+            $response["error"] = "UIN not found";
             return response($response, 404);
         }
     }
 
-    public static function findOrCreateUser($uin)
+    public static function findOrCreateUser($uin, $username = null, $email = null)
     {
         $user = User::where('uin', $uin)->get()->first();
         if($user) {
@@ -79,7 +107,16 @@ class UserController extends Controller
                 }
 
                 if($ldapACMBind && $user) {
-                    $result = ldap_search($ldapACMConn, $ldapACMBase, "(cn=$user->first $user->last)");
+                    $query = "(&(cn=$user->first $user->last)";
+                    if($username) {
+                        $query .= "(samaccountname=$username)";
+                    }
+                    if($email) {
+                        $query .= "(mail=$email)";
+                    }
+                    $query .= ")";
+                    
+                    $result = ldap_search($ldapACMConn, $ldapACMBase, $query);
                     $data = ldap_get_entries($ldapACMConn, $result);
 
                     for($i = 0; $i < $data["count"]; $i++) {
