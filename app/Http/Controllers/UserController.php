@@ -10,15 +10,22 @@ use App\User;
 
 class UserController extends Controller
 {
-    public function createUser(Request $request) {
-        $userUIN = $request->input("uin");
+    public function linkUser(Request $request) {
+        $userUIN = (int)$request->input("uin");
         $userUserName = $request->input("username");
         $userEmail = $request->input("email");
-        try {
-            $user = UserController::findOrCreateUser((int)$userUIN, $userUserName, $userEmail);
-        }
-        catch(ErrorException $e) {
-            return response(["error" => "Internal Server Error"], 500);
+        echo $userUIN;
+        $user = User::where('uin', $userUIN)->get()->first();
+        if(!$user) {
+            try {
+                $user = UserController::createUser($userUIN, $userUserName, $userEmail);
+            } catch (ErrorException $e) {
+                return response(["error" => "Internal Server Error"], 500);
+            }
+        } else if((!$user->username || !$user->email) &&
+                  ($userUserName || $userEmail)) {
+            $user = UserController::createFromACM($user, $userUserName, $userEmail);
+            $user->save();
         }
 
         $errorResponse = UserController::verifyUser($user);
@@ -36,11 +43,13 @@ class UserController extends Controller
     }
 
     public function retrieveUser(Request $request, $uin) {
-        try {
-            $user = UserController::findOrCreateUser((int)$uin);
-        }
-        catch(ErrorException $e) {
-            return response(["error" => "Internal Server Error"], 500);
+        $user = User::where('uin', (int)$uin)->get()->first();
+        if(!$user) {
+            try {
+                $user = UserController::createUser((int)$uin);
+            } catch (ErrorException $e) {
+                return response(["error" => "Internal Server Error"], 500);
+            }
         }
 
         $errorResponse = UserController::verifyUser($user);
@@ -57,37 +66,20 @@ class UserController extends Controller
         return response($response, 200);
     }
 
-    public static function verifyActiveUser($user)
-    {
-        if(!$user) {
-            return response(["error" => "UIN not found"], 404);
-        } else if(!$user->username) {
-            return response(["error" => "unable to find ACM account with only UIN"], 300);
-        } else if(!$user->active) {
-            return response(["error" => "user is an inactive ACM member"], 403);
-        } else {
-            return null;
-        }
-    }
-
     public static function verifyUser($user) {
         if(!$user) {
             return response(["error" => "UIN not found"], 404);
-        } else if(!$user->username) {
-            return response(["error" => "unable to find ACM account with only UIN"], 300);
         } else {
             return null;
         }
     }
 
-    public static function findOrCreateUser($uin, $username = null, $email = null)
+    public static function createUser($uin, $username = null, $email = null)
     {
-        $user = User::where('uin', $uin)->get()->first();
-        if(!$user) {
-            $user = UserController::getInfoFromUIC($uin);
-            if($user) {
-                $user = UserController::createFromACM($user, $username, $email);
-            }
+        $user = UserController::getInfoFromUIC($uin);
+        if($user) {
+            $user = UserController::createFromACM($user, $username, $email);
+            $user->save();
         }
         return $user;
     }

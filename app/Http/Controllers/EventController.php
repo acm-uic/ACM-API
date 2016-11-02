@@ -13,6 +13,7 @@ use Google_Service_Calendar;
 use Google_Client;
 use Illuminate\Http\Request;
 use App\Event;
+use App\User;
 
 class EventController extends Controller
 {
@@ -30,18 +31,20 @@ class EventController extends Controller
     }
 
     public function signinEvent(Request $request) {
-        $userUIN = $request->input("uin");
+        $userUIN = (int)$request->input("uin");
         $eventName = $request->input("event");
 
         //get user data from database based off of UIN
-        try {
-            $user = UserController::findOrCreateUser((int)$userUIN);
-        }
-        catch(ErrorException $e) {
-            return response(["error" => "Internal Server Error"], 500);
+        $user = User::where('uin', $userUIN)->get()->first();
+        if(!$user) {
+            try {
+                $user = UserController::createUser($userUIN);
+            } catch (ErrorException $e) {
+                return response(["error" => "Internal Server Error"], 500);
+            }
         }
 
-        $errorResponse = UserController::verifyActiveUser($user);
+        $errorResponse = UserController::verifyUser($user);
         if($errorResponse) {
             return $errorResponse;
         }
@@ -73,6 +76,7 @@ class EventController extends Controller
 
     public static function findOngoingEvents() {
         $current = Carbon::now();
+        $current->addHour(3);
         $nextDay = Carbon::tomorrow();
         $events = EventController::getEventsInInterval($current, $nextDay);
 
