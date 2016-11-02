@@ -40,8 +40,6 @@ class User extends Model
 
             $this->email = $userEmail;
             $this->username = $userUserName;
-
-            $this->save();
         }
     }
 
