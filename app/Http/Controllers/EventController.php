@@ -11,6 +11,7 @@ namespace App\Http\Controllers;
 use Carbon\Carbon;
 use Google_Service_Calendar;
 use Google_Client;
+use Illuminate\Contracts\Logging\Log;
 use Illuminate\Http\Request;
 use App\Event;
 use App\User;

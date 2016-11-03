@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use DB;
 use ErrorException;
+use Illuminate\Contracts\Logging\Log;
 use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\User;
