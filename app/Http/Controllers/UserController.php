@@ -20,6 +20,7 @@ class UserController extends Controller
             try {
                 $user = UserController::createUser($userUIN, $userUserName, $userEmail);
             } catch (ErrorException $e) {
+                Log::error($e);
                 return response(["error" => "Internal Server Error"], 500);
             }
         } else if((!$user->username || !$user->email) &&
@@ -48,6 +49,7 @@ class UserController extends Controller
             try {
                 $user = UserController::createUser((int)$uin);
             } catch (ErrorException $e) {
+                Log::error($e);
                 return response(["error" => "Internal Server Error"], 500);
             }
         }

@@ -40,6 +40,7 @@ class EventController extends Controller
             try {
                 $user = UserController::createUser($userUIN);
             } catch (ErrorException $e) {
+                Log::error($e);
                 return response(["error" => "Internal Server Error"], 500);
             }
         }
