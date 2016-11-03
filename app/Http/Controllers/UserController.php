@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use DB;
 use ErrorException;
-use Illuminate\Contracts\Logging\Log;
 use Illuminate\Http\Request;
 use App\Http\Requests;
 use App\User;
+use Illuminate\Support\Facades\Log;
 
 class UserController extends Controller
 {
