@@ -13,11 +13,13 @@ use Illuminate\Http\Request;
 |
 */
 Route::group(['prefix' => 'events'], function(){
-    Route::get('/', 'EventsController@retrieveEvents');
+    Route::get('/', 'EventController@retrieveEvents');
 
-    Route::post('/signin', 'EventsController@signinEvent');
+    Route::post('/signin', 'EventController@signinEvent');
 });
 
 Route::group(['prefix' => 'user'], function() {
     Route::get('{uin}', 'UserController@retrieveUser');
+
+    Route::post('/link', 'UserController@linkUser');
 });
